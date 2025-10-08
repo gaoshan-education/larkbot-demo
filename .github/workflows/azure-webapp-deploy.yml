@@ -1,0 +1,62 @@
+name: Deploy Node MCP LarkBot to Azure Web App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # For OIDC federated credentials
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+  AZURE_WEBAPP_NAME: gslarkbot-demo
+  AZURE_RESOURCE_GROUP: gslarkbot-demo-rg
+  AZURE_LOCATION: eastasia
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Archive production artifact
+        run: |
+          mkdir artifact
+          cp -r dist package.json package-lock.json* pnpm-lock.yaml* .npmrc public .env.example* artifact 2>$null || true
+          cd artifact
+          npm install --omit=dev --no-audit --no-fund
+          zip -r ../app.zip .
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy infra (Bicep)
+        run: |
+          az group create -n $AZURE_RESOURCE_GROUP -l $AZURE_LOCATION
+          az deployment group create -g $AZURE_RESOURCE_GROUP --template-file infra/main.bicep --parameters @infra/main.parameters.json webAppName=$AZURE_WEBAPP_NAME
+
+      - name: Deploy Web App code
+        run: |
+          az webapp deploy --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_WEBAPP_NAME --src-path app.zip --type zip
+
+      - name: Show Web App URL
+        run: echo "https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"

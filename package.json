@@ -1,0 +1,33 @@
+{
+  "name": "mcp-larkbot-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/app.ts",
+    "dev:webhook": "ts-node src/app.ts webhook",
+    "dev:mcp-sse": "ts-node src/mcp/server.ts",
+    "dev:mcp-tavily": "ts-node src/mcp/tavily.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "deploy:local": "npm run build && node dist/app.js"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
+    "@ai-sdk/openai-compatible": "^0.2.14",
+    "@larksuiteoapi/node-sdk": "^1.50.1",
+    "ai": "^4.3.16",
+    "dotenv": "^16.5.1",
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/node-fetch": "^2.6.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
